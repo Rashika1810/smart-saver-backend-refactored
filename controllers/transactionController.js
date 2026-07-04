@@ -1,5 +1,5 @@
 const Transaction = require("../models/transactionModel");
-
+const mongoose = require("mongoose");
 /**
  * Create Transaction
  * POST /api/v1/transactions
@@ -151,8 +151,19 @@ const getTransaction = async (req, res) => {
  */
 const updateTransaction = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    // ✅ 1. Validate ObjectId FIRST
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid transaction ID.",
+      });
+    }
+
+    // ✅ 2. Find transaction with user ownership check
     const transaction = await Transaction.findOne({
-      _id: req.params.id,
+      _id: id,
       user: req.user.id,
     });
 
@@ -162,20 +173,17 @@ const updateTransaction = async (req, res) => {
         message: "Transaction not found.",
       });
     }
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid transaction ID.",
-      });
-    }
 
+    // ✅ 3. Update safely
     const updatedTransaction = await Transaction.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+      id,
+      {
+        $set: req.body,
+      },
       {
         new: true,
         runValidators: true,
-      },
+      }
     );
 
     return res.status(200).json({
@@ -183,12 +191,13 @@ const updateTransaction = async (req, res) => {
       message: "Transaction updated successfully.",
       data: updatedTransaction,
     });
+
   } catch (error) {
-    console.error(error);
+    console.error("UPDATE ERROR:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to update transaction.",
+      message: error.message || "Failed to update transaction.",
     });
   }
 };
