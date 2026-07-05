@@ -12,6 +12,7 @@ const connectDb = require("./config/connectDb");
 // Routes
 const authRoutes = require("./routes/authRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
+const favoriteRoutes = require("./routes/favoriteRoutes");
 
 // Middleware
 const errorHandler = require("./middleware/errorMiddleware");
@@ -73,6 +74,8 @@ app.get("/", (req, res) => {
 app.use("/api/v1/auth", authRoutes);
 
 app.use("/api/v1/transactions", transactionRoutes);
+
+app.use("/api/v1/favorites", favoriteRoutes);
 
 // 404
 
