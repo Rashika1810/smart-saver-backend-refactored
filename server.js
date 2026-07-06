@@ -17,6 +17,8 @@ const recurringRoutes = require("./routes/recurringRoutes");
 
 // Middleware
 const errorHandler = require("./middleware/errorMiddleware");
+const startRecurringCron = require("./cron/recurringCron");
+const { generateRecurringTransactions } = require("./services/recurringService");
 
 // Config
 dotenv.config();
@@ -97,6 +99,16 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 8080;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`.green.bold);
+
+  try {
+    const generated = await generateRecurringTransactions();
+
+    console.log(`🚀 Startup check completed (${generated} generated).`);
+  } catch (err) {
+    console.error("Startup recurring check failed:", err.message);
+  }
+
+  startRecurringCron();
 });
