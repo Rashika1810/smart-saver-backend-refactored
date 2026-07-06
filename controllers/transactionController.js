@@ -77,6 +77,25 @@ const getTransactions = async (req, res) => {
         filter.date.$lte = new Date(req.query.endDate);
       }
     }
+    // Month / Year Filter
+    if (req.query.year) {
+      const year = Number(req.query.year);
+
+      if (req.query.month && req.query.month !== "all") {
+        const month = Number(req.query.month);
+
+        filter.date = {
+          $gte: new Date(year, month - 1, 1),
+          $lt: new Date(year, month, 1),
+        };
+      } else {
+        // Entire year
+        filter.date = {
+          $gte: new Date(year, 0, 1),
+          $lt: new Date(year + 1, 0, 1),
+        };
+      }
+    }
 
     const transactions = await Transaction.find(filter)
       .sort({
@@ -118,17 +137,17 @@ const getTransaction = async (req, res) => {
       _id: req.params.id,
       user: req.user.id,
     });
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid transaction ID.",
+      });
+    }
 
     if (!transaction) {
       return res.status(404).json({
         success: false,
         message: "Transaction not found.",
-      });
-    }
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid transaction ID.",
       });
     }
 
@@ -183,7 +202,7 @@ const updateTransaction = async (req, res) => {
       {
         new: true,
         runValidators: true,
-      }
+      },
     );
 
     return res.status(200).json({
@@ -191,7 +210,6 @@ const updateTransaction = async (req, res) => {
       message: "Transaction updated successfully.",
       data: updatedTransaction,
     });
-
   } catch (error) {
     console.error("UPDATE ERROR:", error);
 
@@ -212,6 +230,12 @@ const deleteTransaction = async (req, res) => {
       _id: req.params.id,
       user: req.user.id,
     });
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid transaction ID.",
+      });
+    }
 
     if (!transaction) {
       return res.status(404).json({
@@ -219,12 +243,7 @@ const deleteTransaction = async (req, res) => {
         message: "Transaction not found.",
       });
     }
-    if (!mongoose.isValidObjectId(req.params.id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid transaction ID.",
-      });
-    }
+
     await transaction.deleteOne();
 
     return res.status(200).json({
