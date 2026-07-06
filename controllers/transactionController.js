@@ -266,11 +266,51 @@ const deleteTransaction = async (req, res) => {
  */
 const getSummary = async (req, res) => {
   try {
+    const filter = {
+      user: req.user.id,
+    };
+
+    // Type Filter
+    if (req.query.type && req.query.type !== "all") {
+      filter.type = req.query.type;
+    }
+
+    // Category Filter
+    if (req.query.category && req.query.category !== "all") {
+      filter.category = req.query.category;
+    }
+
+    // Search Filter
+    if (req.query.search) {
+      filter.description = {
+        $regex: req.query.search,
+        $options: "i",
+      };
+    }
+
+    // Month / Year Filter
+    if (req.query.year) {
+      const year = Number(req.query.year);
+
+      if (req.query.month && req.query.month !== "all") {
+        const month = Number(req.query.month);
+
+        filter.date = {
+          $gte: new Date(year, month - 1, 1),
+          $lt: new Date(year, month, 1),
+        };
+      } else {
+        // All months of the selected year
+        filter.date = {
+          $gte: new Date(year, 0, 1),
+          $lt: new Date(year + 1, 0, 1),
+        };
+      }
+    }
+
     const summary = await Transaction.aggregate([
       {
-        $match: {
-          user: req.user.id,
-        },
+        $match: filter,
       },
       {
         $group: {
@@ -286,8 +326,11 @@ const getSummary = async (req, res) => {
     let expense = 0;
 
     summary.forEach((item) => {
-      if (item._id === "income") income = item.total;
-      if (item._id === "expense") expense = item.total;
+      if (item._id === "income") {
+        income = item.total;
+      } else if (item._id === "expense") {
+        expense = item.total;
+      }
     });
 
     return res.status(200).json({
