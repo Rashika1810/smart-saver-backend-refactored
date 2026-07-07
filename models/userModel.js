@@ -25,10 +25,33 @@ const userSchema = new mongoose.Schema(
       minlength: 8,
       select: false,
     },
+
+    // ✅ Verification fields
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    verificationToken: {
+      type: String,
+    },
+
+    verificationExpires: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
   },
 );
-
+userSchema.index(
+  { verificationExpires: 1 },
+  {
+    expireAfterSeconds: 0,
+    partialFilterExpression: {
+      isVerified: false,
+    },
+  },
+);
 module.exports = mongoose.model("User", userSchema);

@@ -6,6 +6,8 @@ const {
   registerController,
   loginController,
   profileController,
+  verifyEmailController,
+  resendVerificationController
 } = require("../controllers/authController");
 
 const protect = require("../middleware/authMiddleware");
@@ -36,5 +38,11 @@ router.post("/login", loginValidator, validate, loginController);
  * @access  Private
  */
 router.get("/profile", protect, profileController);
+
+router.get("/verify-email/:token", verifyEmailController);
+router.post(
+  "/resend-verification",
+  resendVerificationController
+);
 
 module.exports = router;
