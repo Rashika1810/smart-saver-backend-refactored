@@ -358,6 +358,167 @@ const getMonthlyAnalytics = async (req, res) => {
     });
   }
 };
+const getAnalytics = async (req, res) => {
+  try {
+    const match = {
+      user: new mongoose.Types.ObjectId(req.user.id),
+    };
+
+    // Year Filter
+    if (req.query.year) {
+      const year = Number(req.query.year);
+
+      if (req.query.month && req.query.month !== "all") {
+        const month = Number(req.query.month);
+
+        match.date = {
+          $gte: new Date(year, month - 1, 1),
+          $lt: new Date(year, month, 1),
+        };
+      } else {
+        match.date = {
+          $gte: new Date(year, 0, 1),
+          $lt: new Date(year + 1, 0, 1),
+        };
+      }
+    }
+
+    if (req.query.type && req.query.type !== "all") {
+      match.type = req.query.type;
+    }
+
+    if (req.query.category && req.query.category !== "all") {
+      match.category = req.query.category;
+    }
+
+    if (req.query.search) {
+      match.description = {
+        $regex: req.query.search,
+        $options: "i",
+      };
+    }
+
+    const transactions = await Transaction.find(match).sort({
+      date: 1,
+    });
+
+    let income = 0;
+    let expense = 0;
+
+    const categoryMap = {};
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    const monthlyMap = {};
+
+    months.forEach((month) => {
+      monthlyMap[month] = {
+        month,
+        income: 0,
+        expense: 0,
+      };
+    });
+    const weekdayMap = {
+      Monday: 0,
+      Tuesday: 0,
+      Wednesday: 0,
+      Thursday: 0,
+      Friday: 0,
+      Saturday: 0,
+      Sunday: 0,
+    };
+
+    let largestExpense = null;
+
+    transactions.forEach((tx) => {
+      const amount = Number(tx.amount);
+
+      if (tx.type === "income") income += amount;
+      else expense += amount;
+
+      // Category totals
+      if (tx.type === "expense") {
+        categoryMap[tx.category] = (categoryMap[tx.category] || 0) + amount;
+      }
+
+      // Monthly Trend
+      // Monthly Trend
+      const month = tx.date.toLocaleString("default", {
+        month: "short",
+      });
+
+      monthlyMap[month][tx.type] += amount;
+
+      // Weekday
+      // Weekday Spending (expenses only)
+      if (tx.type === "expense") {
+        const weekday = tx.date.toLocaleString("default", {
+          weekday: "long",
+        });
+
+        weekdayMap[weekday] += amount;
+      }
+
+      // Largest Expense
+      if (
+        tx.type === "expense" &&
+        (!largestExpense || amount > largestExpense.amount)
+      ) {
+        largestExpense = tx;
+      }
+    });
+
+    res.json({
+      success: true,
+
+      data: {
+        summary: {
+          income,
+          expense,
+          balance: income - expense,
+          transactionCount: transactions.length,
+        },
+
+        categoryBreakdown: Object.entries(categoryMap).map(
+          ([category, amount]) => ({
+            category,
+            amount,
+          }),
+        ),
+
+        monthlyTrend: months.map((month) => monthlyMap[month]),
+
+        weekdaySpending: Object.entries(weekdayMap).map(([day, amount]) => ({
+          day,
+          amount,
+        })),
+
+        largestExpense,
+
+        recentTransactions: transactions.slice(-5).reverse(),
+      },
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to load analytics",
+    });
+  }
+};
 
 module.exports = {
   createTransaction,
@@ -367,4 +528,5 @@ module.exports = {
   deleteTransaction,
   getSummary,
   getMonthlyAnalytics,
+  getAnalytics,
 };

@@ -19,6 +19,7 @@ const {
   deleteTransaction,
   getSummary,
   getMonthlyAnalytics,
+  getAnalytics
 } = require("../controllers/transactionController");
 
 /*
@@ -41,6 +42,8 @@ Transactions CRUD
 
 // Get All Transactions
 router.get("/", protect, transactionQueryValidator, validate, getTransactions);
+
+router.get("/analytics", protect, getAnalytics);
 
 // Get Single Transaction
 router.get("/:id", protect, getTransaction);
