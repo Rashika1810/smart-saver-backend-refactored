@@ -27,6 +27,8 @@ dotenv.config();
 connectDb();
 
 const app = express();
+// beacuse mail was not getting sent
+app.set("trust proxy", 1);
 
 // Security
 app.use(helmet());
