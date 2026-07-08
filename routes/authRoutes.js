@@ -6,8 +6,6 @@ const {
   registerController,
   loginController,
   profileController,
-  verifyEmailController,
-  resendVerificationController
 } = require("../controllers/authController");
 
 const protect = require("../middleware/authMiddleware");
@@ -16,7 +14,7 @@ const {
   registerValidator,
   loginValidator,
   validate,
-} = require("../validators/authValidators.js");
+} = require("../validators/authValidators");
 
 /**
  * @route   POST /api/v1/auth/register
@@ -38,11 +36,5 @@ router.post("/login", loginValidator, validate, loginController);
  * @access  Private
  */
 router.get("/profile", protect, profileController);
-
-router.get("/verify-email/:token", verifyEmailController);
-router.post(
-  "/resend-verification",
-  resendVerificationController
-);
 
 module.exports = router;
