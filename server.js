@@ -14,14 +14,18 @@ const authRoutes = require("./routes/authRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const favoriteRoutes = require("./routes/favoriteRoutes");
 const recurringRoutes = require("./routes/recurringRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 
 // Middleware
 const errorHandler = require("./middleware/errorMiddleware");
 const startRecurringCron = require("./cron/recurringCron");
 const { generateRecurringTransactions } = require("./services/recurringService");
+const { initializeGemini } = require("./services/geminiServices");
 
 // Config
 dotenv.config();
+
+initializeGemini();
 
 // Database
 connectDb();
@@ -83,6 +87,8 @@ app.use("/api/v1/transactions", transactionRoutes);
 app.use("/api/v1/favorites", favoriteRoutes);
 
 app.use("/api/v1/recurring", recurringRoutes);
+
+app.use("/api/v1/ai", aiRoutes);
 
 // 404
 
