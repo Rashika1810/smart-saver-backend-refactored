@@ -6,6 +6,7 @@ const {
   registerController,
   loginController,
   profileController,
+  updateOpeningBalanceController
 } = require("../controllers/authController");
 
 const protect = require("../middleware/authMiddleware");
@@ -36,5 +37,16 @@ router.post("/login", loginValidator, validate, loginController);
  * @access  Private
  */
 router.get("/profile", protect, profileController);
+
+/**
+ * @route   PATCH /api/v1/auth/opening-balance
+ * @desc    Update Opening Balance
+ * @access  Private
+ */
+router.patch(
+  "/opening-balance",
+  protect,
+  updateOpeningBalanceController
+);
 
 module.exports = router;

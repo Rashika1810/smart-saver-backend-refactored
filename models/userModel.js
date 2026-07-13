@@ -25,7 +25,16 @@ const userSchema = new mongoose.Schema(
       minlength: 8,
       select: false,
     },
+    openingBalance: {
+      type: Number,
+      default: 0,
+    },
+    openingBalanceSet: {
+      type: Boolean,
+      default: false,
+    },
   },
+
   {
     timestamps: true,
   },

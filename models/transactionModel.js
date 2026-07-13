@@ -27,6 +27,12 @@ const transactionSchema = new mongoose.Schema(
       trim: true,
     },
 
+    merchant: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     description: {
       type: String,
       trim: true,
@@ -38,15 +44,65 @@ const transactionSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+
+    // ===== NEW FIELDS =====
+
+    source: {
+      type: String,
+      enum: ["manual", "phonepe"],
+      default: "manual",
+    },
+
+    paymentType: {
+      type: String,
+      default: "UPI",
+    },
+
+    paymentAccount: {
+      type: String,
+      default: "",
+    },
+
+    transactionId: {
+      type: String,
+      default: "",
+    },
+
+    utr: {
+      type: String,
+      default: "",
+    },
+
+    statementMonth: {
+      type: String,
+      default: "",
+    },
+
+    importedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
-  },
+  }
 );
 
+// Existing Index
 transactionSchema.index({
   user: 1,
   date: -1,
 });
+
+// Prevent duplicate imports
+transactionSchema.index(
+  {
+    user: 1,
+    transactionId: 1,
+  },
+  {
+    unique: true,
+    sparse: true,
+  }
+);
 
 module.exports = mongoose.model("Transaction", transactionSchema);

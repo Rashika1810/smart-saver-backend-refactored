@@ -15,6 +15,7 @@ const transactionRoutes = require("./routes/transactionRoutes");
 const favoriteRoutes = require("./routes/favoriteRoutes");
 const recurringRoutes = require("./routes/recurringRoutes");
 const aiRoutes = require("./routes/aiRoutes");
+const importRoutes = require("./routes/importRoutes");
 
 // Middleware
 const errorHandler = require("./middleware/errorMiddleware");
@@ -42,7 +43,7 @@ app.use(compression());
 app.use(
   cors({
     origin: process.env.CLIENT_URL,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE","PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
@@ -87,6 +88,8 @@ app.use("/api/v1/transactions", transactionRoutes);
 app.use("/api/v1/favorites", favoriteRoutes);
 
 app.use("/api/v1/recurring", recurringRoutes);
+
+app.use("/api/v1/import", importRoutes);
 
 app.use("/api/v1/ai", aiRoutes);
 

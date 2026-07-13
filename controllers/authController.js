@@ -40,6 +40,8 @@ const registerController = async (req, res) => {
           id: user._id,
           name: user.name,
           email: user.email,
+          openingBalance: user.openingBalance,
+          openingBalanceSet: user.openingBalanceSet,
         },
       },
     });
@@ -92,6 +94,8 @@ const loginController = async (req, res) => {
           id: user._id,
           name: user.name,
           email: user.email,
+          openingBalance: user.openingBalance,
+          openingBalanceSet: user.openingBalanceSet,
         },
       },
     });
@@ -126,6 +130,8 @@ const profileController = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        openingBalance: user.openingBalance,
+        openingBalanceSet: user.openingBalanceSet,
         createdAt: user.createdAt,
       },
     });
@@ -139,8 +145,57 @@ const profileController = async (req, res) => {
   }
 };
 
+/**
+ * Update Opening Balance
+ * PATCH /api/v1/auth/opening-balance
+ */
+const updateOpeningBalanceController = async (req, res) => {
+  try {
+    const { openingBalance } = req.body;
+
+    if (
+      openingBalance === undefined ||
+      isNaN(openingBalance) ||
+      Number(openingBalance) < 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid opening balance.",
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        openingBalance: Number(openingBalance),
+        openingBalanceSet: true,
+      },
+      {
+        new: true,
+      },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Opening balance updated successfully.",
+      data: {
+        openingBalance: user.openingBalance,
+        openingBalanceSet: user.openingBalanceSet,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update opening balance.",
+    });
+  }
+};
+
 module.exports = {
   registerController,
   loginController,
   profileController,
+  updateOpeningBalanceController,
 };

@@ -1,4 +1,5 @@
 const Transaction = require("../models/transactionModel");
+const User = require("../models/userModel");
 const mongoose = require("mongoose");
 
 const calculateAnalytics = async (userId, query = {}) => {
@@ -46,6 +47,11 @@ const calculateAnalytics = async (userId, query = {}) => {
   const transactions = await Transaction.find(match).sort({
     date: 1,
   });
+
+  // NEW
+  const user = await User.findById(userId).select("openingBalance");
+
+  const openingBalance = user?.openingBalance || 0;
 
   let income = 0;
   let expense = 0;
@@ -97,24 +103,19 @@ const calculateAnalytics = async (userId, query = {}) => {
     } else {
       expense += amount;
 
-      // Category totals
-      categoryMap[tx.category] =
-        (categoryMap[tx.category] || 0) + amount;
+      categoryMap[tx.category] = (categoryMap[tx.category] || 0) + amount;
 
-      // Largest expense
       if (!largestExpense || amount > largestExpense.amount) {
         largestExpense = tx;
       }
     }
 
-    // Monthly trend
     const month = tx.date.toLocaleString("default", {
       month: "short",
     });
 
     monthlyMap[month][tx.type] += amount;
 
-    // Weekday spending
     if (tx.type === "expense") {
       const weekday = tx.date.toLocaleString("default", {
         weekday: "long",
@@ -131,35 +132,30 @@ const calculateAnalytics = async (userId, query = {}) => {
     }))
     .sort((a, b) => b.amount - a.amount);
 
-  const weekdaySpending = Object.entries(weekdayMap).map(
-    ([day, amount]) => ({
-      day,
-      amount,
-    })
-  );
+  const weekdaySpending = Object.entries(weekdayMap).map(([day, amount]) => ({
+    day,
+    amount,
+  }));
 
   const topCategory =
-    categoryBreakdown.length > 0
-      ? categoryBreakdown[0]
-      : null;
+    categoryBreakdown.length > 0 ? categoryBreakdown[0] : null;
 
   const highestWeekday =
     weekdaySpending.length > 0
       ? weekdaySpending.reduce((max, current) =>
-          current.amount > max.amount ? current : max
+          current.amount > max.amount ? current : max,
         )
       : null;
 
   const savingsRate =
-    income > 0
-      ? Number((((income - expense) / income) * 100).toFixed(1))
-      : 0;
+    income > 0 ? Number((((income - expense) / income) * 100).toFixed(1)) : 0;
 
   return {
     summary: {
+      openingBalance,
       income,
       expense,
-      balance: income - expense,
+      balance: openingBalance + income - expense,
       savingsRate,
       transactionCount: transactions.length,
     },

@@ -1,6 +1,7 @@
 const Transaction = require("../models/transactionModel");
 const mongoose = require("mongoose");
 const { calculateAnalytics } = require("../services/analyticsService");
+const User = require("../models/userModel");
 /**
  * Create Transaction
  * POST /api/v1/transactions
@@ -295,13 +296,16 @@ const getSummary = async (req, res) => {
         expense = item.total;
       }
     });
+    const user = await User.findById(req.user.id).select("openingBalance");
 
+    const openingBalance = user?.openingBalance || 0;
     return res.status(200).json({
       success: true,
       data: {
+        openingBalance,
         income,
         expense,
-        balance: income - expense,
+        balance: openingBalance + income - expense,
       },
     });
   } catch (error) {
@@ -361,10 +365,7 @@ const getMonthlyAnalytics = async (req, res) => {
 };
 const getAnalytics = async (req, res) => {
   try {
-    const analytics = await calculateAnalytics(
-      req.user.id,
-      req.query
-    );
+    const analytics = await calculateAnalytics(req.user.id, req.query);
 
     return res.json({
       success: true,
