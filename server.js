@@ -16,6 +16,7 @@ const favoriteRoutes = require("./routes/favoriteRoutes");
 const recurringRoutes = require("./routes/recurringRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const importRoutes = require("./routes/importRoutes");
+const aiChatRoutes = require("./routes/aiChatRoutes");
 
 // Middleware
 const errorHandler = require("./middleware/errorMiddleware");
@@ -92,6 +93,8 @@ app.use("/api/v1/recurring", recurringRoutes);
 app.use("/api/v1/import", importRoutes);
 
 app.use("/api/v1/ai", aiRoutes);
+
+app.use("/api/v1/assistant",aiChatRoutes);
 
 // 404
 
