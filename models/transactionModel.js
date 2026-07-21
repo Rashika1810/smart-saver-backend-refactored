@@ -63,15 +63,10 @@ const transactionSchema = new mongoose.Schema(
       default: "",
     },
 
-    transactionId: {
-      type: String,
-      default: "",
-    },
-
-    utr: {
-      type: String,
-      default: "",
-    },
+   transactionHash: {
+  type: String,
+  default: "",
+},
 
     statementMonth: {
       type: String,
@@ -97,7 +92,7 @@ transactionSchema.index({
 transactionSchema.index(
   {
     user: 1,
-    transactionId: 1,
+    transactionHash: 1,
   },
   {
     unique: true,

@@ -1,8 +1,7 @@
 const Transaction = require("../models/transactionModel");
-const {
-  parsePhonePeStatement,
-} = require("../services/parser/phonepeParser");
+const { parsePhonePeStatement } = require("../services/parser/phonepeParser");
 const Statement = require("../models/statementModel");
+const hashTransactionId = require("../utils/hashTransactionId");
 function validateTransaction(transaction) {
   if (!transaction.amount) return false;
 
@@ -30,19 +29,9 @@ const importPhonePeStatement = async (req, res) => {
 
     // Parse PDF
     const parsedData = await parsePhonePeStatement(req.file.buffer);
-    console.log("Parsed Data:");
-    console.dir(parsedData, { depth: null });
-
-    console.log("Transactions:", parsedData.transactions);
-    console.log("Count:", parsedData.transactions?.length);
     const parsedTransactions = parsedData.transactions || [];
 
     const validTransactions = parsedTransactions.filter(validateTransaction);
-    console.log("Valid Transactions:", validTransactions.length);
-
-    parsedTransactions.forEach((t, i) => {
-      console.log(`Transaction ${i + 1}:`, t);
-    });
     const invalidCount = parsedTransactions.length - validTransactions.length;
     if (!validTransactions.length) {
       return res.status(400).json({
@@ -50,26 +39,25 @@ const importPhonePeStatement = async (req, res) => {
         message: "No valid transactions found in the uploaded statement.",
       });
     }
-    // Extract transaction IDs
-    const transactionIds = validTransactions
-      .map((t) => t.transactionId)
+    // Extract transaction hashes
+    const transactionHashes = validTransactions
+      .map((t) => hashTransactionId(t.transactionId))
       .filter(Boolean);
-
     // Find already imported transactions
     const existingTransactions = await Transaction.find(
       {
         user: req.user.id,
-        transactionId: {
-          $in: transactionIds,
+        transactionHash: {
+          $in: transactionHashes,
         },
       },
       {
-        transactionId: 1,
+        transactionHash: 1,
       },
     );
 
-    const existingIds = new Set(
-      existingTransactions.map((t) => t.transactionId),
+    const existingHashes = new Set(
+      existingTransactions.map((t) => t.transactionHash),
     );
 
     const newTransactions = [];
@@ -77,16 +65,20 @@ const importPhonePeStatement = async (req, res) => {
     let duplicateCount = 0;
 
     for (const transaction of validTransactions) {
-      if (
-        transaction.transactionId &&
-        existingIds.has(transaction.transactionId)
-      ) {
+      const transactionHash = hashTransactionId(transaction.transactionId);
+
+      if (transactionHash && existingHashes.has(transactionHash)) {
         duplicateCount++;
         continue;
       }
 
+      // Remove raw transactionId before saving
+      const { transactionId, ...rest } = transaction;
+
       newTransactions.push({
-        ...transaction,
+        ...rest,
+
+        transactionHash,
 
         user: req.user.id,
 
@@ -99,7 +91,6 @@ const importPhonePeStatement = async (req, res) => {
         })}-${transaction.date.getFullYear()}`,
       });
     }
-
     // Bulk insert
     if (newTransactions.length) {
       await Transaction.insertMany(newTransactions, {

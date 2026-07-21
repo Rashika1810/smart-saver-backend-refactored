@@ -55,8 +55,6 @@ function splitTransactionBlocks(lines) {
 
     if (isDateLine(line)) {
 
-      console.log("DATE FOUND:", line);
-
       if (current.length) {
         blocks.push(current);
       }
@@ -84,22 +82,14 @@ function splitTransactionBlocks(lines) {
 function parseTransactions(lines) {
   const blocks = splitTransactionBlocks(lines);
 
-  console.log("Transaction Blocks Found:", blocks.length);
-  console.log(JSON.stringify(blocks[0], null, 2));
-console.log(JSON.stringify(blocks[1], null, 2));
-console.log(JSON.stringify(blocks[2], null, 2));
-
   const transactions = [];
 
   for (const block of blocks) {
     const transaction = parseTransaction(block);
- console.log(transaction);
     if (transaction) {
       transactions.push(transaction);
     }
   }
-
-  console.log("Valid Transactions:", transactions.length);
 
   return transactions;
 }

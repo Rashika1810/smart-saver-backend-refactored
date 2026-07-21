@@ -8,7 +8,7 @@ const {
   startsMerchant,
   stopMerchant,
   parseTransactionId,
-  parseUTR,
+//   parseUTR,
   parseAccount,
 } = require("./phonepeHelpers");
 
@@ -81,19 +81,19 @@ function parseTransaction(block) {
         // UTR
         //------------------------------------
 
-        let utr = "";
+        // let utr = "";
 
-        const utrLine = block.find(line =>
-            line.startsWith("UTR No.")
-        );
+        // const utrLine = block.find(line =>
+        //     line.startsWith("UTR No.")
+        // );
 
-        if (utrLine) {
+        // if (utrLine) {
 
-            utr = utrLine
-                .replace("UTR No.", "")
-                .trim();
+        //     utr = utrLine
+        //         .replace("UTR No.", "")
+        //         .trim();
 
-        }
+        // }
 
         //------------------------------------
         // Payment Account
@@ -156,7 +156,6 @@ function parseTransaction(block) {
 
             transactionId,
 
-            utr,
 
         };
 
