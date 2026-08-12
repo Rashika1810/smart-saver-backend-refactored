@@ -48,7 +48,6 @@ const calculateAnalytics = async (userId, query = {}) => {
     date: 1,
   });
 
-  // NEW
   const user = await User.findById(userId).select("openingBalance");
 
   const openingBalance = user?.openingBalance || 0;
@@ -103,7 +102,26 @@ const calculateAnalytics = async (userId, query = {}) => {
     } else {
       expense += amount;
 
-      categoryMap[tx.category] = (categoryMap[tx.category] || 0) + amount;
+      // Normalize category
+      const rawCategory = tx.category?.trim();
+
+      if (rawCategory) {
+        let key = rawCategory.toLowerCase();
+
+        // Treat "Other" and "Others" as the same category
+        if (key === "other" || key === "others") {
+          key = "others";
+        }
+
+        if (!categoryMap[key]) {
+          categoryMap[key] = {
+            category: key === "others" ? "Others" : rawCategory,
+            amount: 0,
+          };
+        }
+
+        categoryMap[key].amount += amount;
+      }
 
       if (!largestExpense || amount > largestExpense.amount) {
         largestExpense = tx;
@@ -125,21 +143,22 @@ const calculateAnalytics = async (userId, query = {}) => {
     }
   });
 
-  const categoryBreakdown = Object.entries(categoryMap)
-    .map(([category, amount]) => ({
-      category,
-      amount,
-    }))
-    .sort((a, b) => b.amount - a.amount);
+  // Category Breakdown
+  const categoryBreakdown = Object.values(categoryMap).sort(
+    (a, b) => b.amount - a.amount,
+  );
 
+  // Weekday Spending
   const weekdaySpending = Object.entries(weekdayMap).map(([day, amount]) => ({
     day,
     amount,
   }));
 
+  // Top Category
   const topCategory =
     categoryBreakdown.length > 0 ? categoryBreakdown[0] : null;
 
+  // Highest Spending Weekday
   const highestWeekday =
     weekdaySpending.length > 0
       ? weekdaySpending.reduce((max, current) =>
@@ -147,6 +166,7 @@ const calculateAnalytics = async (userId, query = {}) => {
         )
       : null;
 
+  // Savings Rate
   const savingsRate =
     income > 0 ? Number((((income - expense) / income) * 100).toFixed(1)) : 0;
 
