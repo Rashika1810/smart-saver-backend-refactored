@@ -33,6 +33,24 @@ function addFrequency(date, frequency) {
   return next;
 }
 
+function isCustomDay(date, daysOfWeek) {
+  return daysOfWeek.includes(date.getDay());
+}
+
+function getNextCustomDay(date, daysOfWeek) {
+  const next = new Date(date);
+
+  for (let i = 1; i <= 7; i++) {
+    next.setDate(next.getDate() + 1);
+
+    if (daysOfWeek.includes(next.getDay())) {
+      return next;
+    }
+  }
+
+  return null;
+}
+
 const generateRecurringTransactions = async () => {
   const today = normalize(new Date());
 
@@ -45,6 +63,80 @@ const generateRecurringTransactions = async () => {
   for (const recurring of recurringList) {
     let currentDate;
 
+    /*
+     * CUSTOM DAYS
+     */
+    if (recurring.frequency === "custom") {
+      const days = recurring.daysOfWeek || [];
+
+      // Invalid custom recurrence
+      if (days.length === 0) {
+        continue;
+      }
+
+      if (recurring.lastGenerated) {
+        currentDate = normalize(recurring.lastGenerated);
+
+        // Move to the next selected weekday
+        currentDate = getNextCustomDay(currentDate, days);
+      } else {
+        currentDate = normalize(recurring.startDate);
+
+        // If start date itself is not selected,
+        // find the next selected day.
+        if (!days.includes(currentDate.getDay())) {
+          let found = false;
+
+          for (let i = 1; i <= 7; i++) {
+            currentDate.setDate(currentDate.getDate() + 1);
+
+            if (days.includes(currentDate.getDay())) {
+              found = true;
+              break;
+            }
+          }
+
+          if (!found) {
+            continue;
+          }
+        }
+      }
+
+      let count = 0;
+
+      while (currentDate <= today && count < MAX_GENERATION) {
+        if (
+          recurring.endDate &&
+          currentDate > normalize(recurring.endDate)
+        ) {
+          break;
+        }
+
+        await Transaction.create({
+          user: recurring.user,
+          amount: recurring.amount,
+          type: recurring.type,
+          category: recurring.category,
+          description: recurring.description,
+          date: currentDate,
+        });
+
+        recurring.lastGenerated = currentDate;
+
+        generated++;
+        count++;
+
+        currentDate = getNextCustomDay(currentDate, days);
+      }
+
+      await recurring.save();
+
+      continue;
+    }
+
+    /*
+     * EXISTING DAILY / WEEKLY / MONTHLY / YEARLY
+     */
     if (recurring.lastGenerated) {
       currentDate = addFrequency(
         normalize(recurring.lastGenerated),
@@ -57,7 +149,10 @@ const generateRecurringTransactions = async () => {
     let count = 0;
 
     while (currentDate <= today && count < MAX_GENERATION) {
-      if (recurring.endDate && currentDate > normalize(recurring.endDate)) {
+      if (
+        recurring.endDate &&
+        currentDate > normalize(recurring.endDate)
+      ) {
         break;
       }
 
@@ -73,10 +168,12 @@ const generateRecurringTransactions = async () => {
       recurring.lastGenerated = currentDate;
 
       generated++;
-
       count++;
 
-      currentDate = addFrequency(currentDate, recurring.frequency);
+      currentDate = addFrequency(
+        currentDate,
+        recurring.frequency,
+      );
     }
 
     await recurring.save();
